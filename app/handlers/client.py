@@ -1,5 +1,6 @@
 from app.create_bot import bot
 from app.keyboards import client_keyboards
+from app.handlers.handlers_commands import client_commands
 
 from aiogram.dispatcher import Dispatcher
 from aiogram import types
@@ -24,5 +25,5 @@ async def contacts(message: types.Message):
 
 
 def register_handlers_client(dp: Dispatcher):
-    dp.register_message_handler(start, commands=['start', 'До_головного_меню'])
-    dp.register_message_handler(contacts, commands='Наші_контакти')
+    dp.register_message_handler(start, commands=client_commands['start'])
+    dp.register_message_handler(contacts, commands=client_commands['Наші_контакти'])
