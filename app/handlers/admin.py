@@ -4,13 +4,15 @@ from aiogram import types
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.dispatcher import FSMContext, Dispatcher
-from app.handlers.handlers_commands import admin_commands
 
+from app.handlers.handlers_commands import admin_commands
 from app.create_bot import bot
 from app.handlers.state_machines import AddManagers
+from app.keyboards.admin_keyboards import manager_keyboard
+from app.keyboards.client_keyboards import start_menu
 
+managers_id = [os.getenv('SUPER_USER_ID'), ]
 
-managers_id = []
 
 async def start_add_manager(message: types.Message):
     if int(message.from_user.id) == int(os.getenv('SUPER_USER_ID')):
@@ -20,8 +22,8 @@ async def start_add_manager(message: types.Message):
 
 # break state machines
 async def cancel_admin_handlers(message: types.Message, state: FSMContext):
-    # if int(message.from_user.id) in admins_id:
-    current_state = await state.get_state()
+    if int(message.from_user.id) in managers_id:
+        current_state = await state.get_state()
     if current_state is None:
         return
     await state.finish()
@@ -40,8 +42,21 @@ async def add_id_manager(message: types.Message, state: FSMContext):
     if int(message.from_user.id) == int(os.getenv('SUPER_USER_ID')):
         async with state.proxy() as data:
             data['manager_id'] = int(message.from_user.id)
-        await bot.send_message(message.from_user.id, f'last name:{data["last_name"]}, manager id: {data["manager_id"]}')
+        if data['manager_id'] not in managers_id:
+            managers_id.append(data['manager_id'])
+        else:
+            bot.send_message(message.from_user.id, 'Працівник вже в базі')
         await state.finish()
+
+
+async def send_client_keyboard(message: types.Message):
+    if int(message.from_user.id) in managers_id:
+        await bot.send_message(message.from_user.id, 'Клавіатура кліента', reply_markup=start_menu)
+
+
+async def send_manager_keyboard(message: types.Message):
+    if int(message.from_user.id) in managers_id:
+        await bot.send_message(message.from_user.id, 'Клавіатура менеджера', reply_markup=manager_keyboard)
 
 
 def register_handler_admin(dp: Dispatcher):
@@ -51,3 +66,5 @@ def register_handler_admin(dp: Dispatcher):
                                 state="*")
     dp.register_message_handler(add_last_name_manager, state=AddManagers.last_name)
     dp.register_message_handler(add_id_manager, state=AddManagers.manager_id)
+    dp.register_message_handler(send_client_keyboard, commands=admin_commands['Клавіатура_клієнт'])
+    dp.register_message_handler(send_manager_keyboard, commands=admin_commands['Клавіатура_менеджера'])
