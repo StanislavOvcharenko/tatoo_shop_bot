@@ -1,13 +1,18 @@
 from app.create_bot import bot
-from app.keyboards import client_keyboards
+from app.keyboards.client_keyboards import start_menu
+from app.keyboards.admin_keyboards import choose_keyboard
 from app.handlers.handlers_commands import client_commands
+from app.handlers.admin import managers_id
 
 from aiogram.dispatcher import Dispatcher
 from aiogram import types
 
 
 async def start(message: types.Message):
-    await bot.send_message(message.from_user.id, 'Привіт :)', reply_markup=client_keyboards.start_menu)
+    if int(message.from_user.id) in managers_id:
+        await bot.send_message(message.from_user.id, 'Виберіть клавіатуру', reply_markup=choose_keyboard)
+    else:
+        await bot.send_message(message.from_user.id, 'Привіт :)', reply_markup=start_menu)
 
 
 async def contacts(message: types.Message):
