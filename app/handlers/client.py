@@ -1,8 +1,12 @@
+import sqlalchemy.exc
+
 from app.create_bot import bot
 from app.keyboards.client_keyboards import start_menu
 from app.keyboards.admin_keyboards import choose_keyboard
 from app.handlers.handlers_commands import client_commands
 from app.handlers.admin import managers_id
+from app.data_base import AllClients, session
+
 
 from aiogram.dispatcher import Dispatcher
 from aiogram import types
@@ -13,6 +17,14 @@ async def start(message: types.Message):
         await bot.send_message(message.from_user.id, 'Виберіть клавіатуру', reply_markup=choose_keyboard)
     else:
         await bot.send_message(message.from_user.id, 'Привіт :)', reply_markup=start_menu)
+    try:
+        client = AllClients(client_telegram_id=message.from_user.id)
+        session.add(client)
+        session.commit()
+    except:
+        session.rollback()
+
+
 
 
 async def contacts(message: types.Message):
@@ -32,3 +44,4 @@ async def contacts(message: types.Message):
 def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(start, commands=client_commands['start'])
     dp.register_message_handler(contacts, commands=client_commands['Наші_контакти'])
+
