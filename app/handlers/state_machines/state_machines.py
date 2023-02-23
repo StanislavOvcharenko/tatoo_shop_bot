@@ -11,3 +11,11 @@ class MakeMailing(StatesGroup):
     text = State()
 
 
+class AddPigment(StatesGroup):
+    photo = State()
+    direction = State()
+    zone_or_color = State()
+    company_creator = State()
+    pigment_name = State()
+    description = State()
+    volume_and_price = State()
