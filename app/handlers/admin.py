@@ -2,15 +2,14 @@ import os
 
 from aiogram import types
 from aiogram.dispatcher.filters import Text
-from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.dispatcher import FSMContext, Dispatcher
 
 from app.handlers.handlers_commands import admin_commands
 from app.create_bot import bot
-from app.handlers.state_machines import AddManagers, MakeMailing
+from app.handlers.state_machines import AddManagers, MakeMailing, AddPigment
 from app.keyboards.admin_keyboards import manager_keyboard
 from app.keyboards.client_keyboards import start_menu
-from app.data_base import AllManagers, session, AllClients, DataMailing
+from app.data_base import AllManagers, session, AllClients, DataMailing, Pigments
 
 managers_id = []
 
@@ -56,10 +55,12 @@ async def add_id_manager(message: types.Message, state: FSMContext):
 
         await state.finish()
 
+
 async def start_make_mailing(message: types.Message):
     if int(message.from_user.id) in managers_id:
         await MakeMailing.photo.set()
         await message.reply('Завантажте фото')
+
 
 async def add_mailing_photo(message: types.Message, state: FSMContext):
     if int(message.from_user.id) in managers_id:
@@ -67,6 +68,7 @@ async def add_mailing_photo(message: types.Message, state: FSMContext):
             data['photo_id'] = message.photo[0].file_id
         await MakeMailing.next()
         await message.reply("Введіть текст повідомлення")
+
 
 async def send_mailing(message: types.Message, state: FSMContext):
     if int(message.from_user.id) in managers_id:
@@ -80,6 +82,61 @@ async def send_mailing(message: types.Message, state: FSMContext):
         await state.finish()
 
 
+async def start_add_pigment(message: types.message):
+    if message.from_user.id in managers_id:
+        await AddPigment.photo.set()
+        await message.reply('Завантажте фотографію пігменту')
+
+
+async def add_photo_pigment(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['photo'] = message.photo[0].file_id
+    await AddPigment.next()
+    await message.reply('Введіть: "Татту" чи "Перманент"')
+
+
+async def add_direction(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['direction'] = message.text
+    await AddPigment.next()
+    await message.reply('Введіть зону для перманенту  чи колір для татту')
+
+
+async def add_zone_or_color(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['zone_or_color'] = message.text
+        await AddPigment.next()
+        await message.reply('Введіть виробника')
+
+async def add_company_creator(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['company_creator'] = message.text
+    await AddPigment.next()
+    await message.reply('Введіть назву пігменту')
+
+
+async def add_pigment_name(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['pigment_name'] = message.text
+    await AddPigment.next()
+    await message.reply('Введіть опис пігменту')
+
+async def add_description(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['description'] = message.text
+    await AddPigment.next()
+    await message.reply('Введіть обьеми та ціни на пігменти. Формат: (Обьем: Ціна)')
+
+async def add_volume_and_price(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['volume_and_price'] = message.text
+
+    pigment = Pigments(photo=data["photo"], direction=data["direction"], zone_or_color=data["zone_or_color"],
+                       company_creator=data["company_creator"], pigment_name=data["pigment_name"],
+                       description=data["description"], volume_and_price=data["volume_and_price"])
+    session.add(pigment)
+    session.commit()
+    await state.finish()
 
 async def send_client_keyboard(message: types.Message):
     if int(message.from_user.id) in managers_id:
@@ -101,8 +158,17 @@ def register_handler_admin(dp: Dispatcher):
     dp.register_message_handler(add_id_manager, state=AddManagers.manager_id)
     # make a mailing
     dp.register_message_handler(start_make_mailing, commands=admin_commands['Зробити_розсилку'], state=None)
-    dp.register_message_handler(add_mailing_photo,content_types=['photo'], state=MakeMailing.photo)
+    dp.register_message_handler(add_mailing_photo, content_types=['photo'], state=MakeMailing.photo)
     dp.register_message_handler(send_mailing, state=MakeMailing.text)
+    # add pigment
+    dp.register_message_handler(start_add_pigment, commands=admin_commands['Додати_пігмент'], state=None)
+    dp.register_message_handler(add_photo_pigment, content_types=['photo'], state=AddPigment.photo)
+    dp.register_message_handler(add_direction, state=AddPigment.direction)
+    dp.register_message_handler(add_zone_or_color, state=AddPigment.zone_or_color)
+    dp.register_message_handler(add_company_creator, state=AddPigment.company_creator)
+    dp.register_message_handler(add_pigment_name, state=AddPigment.pigment_name)
+    dp.register_message_handler(add_description, state=AddPigment.description)
+    dp.register_message_handler(add_volume_and_price, state=AddPigment.volume_and_price)
     # send keyboards
     dp.register_message_handler(send_client_keyboard, commands=admin_commands['Клавіатура_клієнт'])
     dp.register_message_handler(send_manager_keyboard, commands=admin_commands['Клавіатура_менеджера'])

@@ -32,8 +32,20 @@ class DataMailing(Base):
     text = Column(String)
 
 
+class Pigments(Base):
+    __tablename__ = 'Pigments'
+
+    id = Column(Integer, primary_key=True)
+    photo = Column(String)
+    direction = Column(String)
+    zone_or_color = Column(String)
+    company_creator = Column(String)
+    pigment_name = Column(String)
+    description = Column(String)
+    volume_and_price = Column(String)
 
 
 
-create_session = sessionmaker(bind=engine,)
+
+create_session = sessionmaker(bind=engine)
 session = create_session()
