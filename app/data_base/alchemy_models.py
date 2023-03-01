@@ -39,10 +39,20 @@ class Pigments(Base):
     photo = Column(String)
     direction = Column(String)
     zone_or_color = Column(String)
-    company_creator = Column(String)
+    company_creator = Column(String, ForeignKey("Creator.creator_name"))
     pigment_name = Column(String)
     description = Column(String)
     volume_and_price = Column(String)
+    creator = relationship("Creator", back_populates='pigment')
+
+
+class Creator(Base):
+    __tablename__ = 'Creator'
+
+    photo = Column(String)
+    direction = Column(String)
+    creator_name = Column(String,primary_key=True)
+    pigment = relationship("Pigments", back_populates='creator')
 
 
 

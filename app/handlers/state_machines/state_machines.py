@@ -19,3 +19,9 @@ class AddPigment(StatesGroup):
     pigment_name = State()
     description = State()
     volume_and_price = State()
+
+
+class AddCreator(StatesGroup):
+    photo = State()
+    direction = State()
+    creator_name = State()
