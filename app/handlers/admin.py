@@ -6,12 +6,13 @@ from aiogram.dispatcher import FSMContext, Dispatcher
 
 from app.handlers.handlers_commands import admin_commands
 from app.create_bot import bot
-from app.handlers.state_machines import AddManagers, MakeMailing, AddPigment
+from app.handlers.state_machines import AddManagers, MakeMailing, AddPigment, AddCreator
 from app.keyboards.admin_keyboards import manager_keyboard
 from app.keyboards.client_keyboards import start_menu
-from app.data_base import AllManagers, session, AllClients, DataMailing, Pigments
+from app.data_base import AllManagers, session, AllClients, DataMailing, Pigments, Creator
 
 managers_id = []
+direction = ['Татту', 'Перманент']
 
 
 async def start_add_manager(message: types.Message):
@@ -95,11 +96,14 @@ async def add_photo_pigment(message: types.Message, state: FSMContext):
     await message.reply('Введіть: "Татту" чи "Перманент"')
 
 
-async def add_direction(message: types.Message, state: FSMContext):
-    async with state.proxy() as data:
-        data['direction'] = message.text
-    await AddPigment.next()
-    await message.reply('Введіть зону для перманенту  чи колір для татту')
+async def add_pigment_direction(message: types.Message, state: FSMContext):
+    if message.text not in direction:
+        await bot.send_message(message.from_user.id, 'Введені не вірні данні')
+    else:
+        async with state.proxy() as data:
+            data['direction'] = message.text
+        await AddPigment.next()
+        await message.reply('Введіть зону для перманенту  чи колір для татту')
 
 
 async def add_zone_or_color(message: types.Message, state: FSMContext):
@@ -107,6 +111,7 @@ async def add_zone_or_color(message: types.Message, state: FSMContext):
         data['zone_or_color'] = message.text
         await AddPigment.next()
         await message.reply('Введіть виробника')
+
 
 async def add_company_creator(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
@@ -121,11 +126,13 @@ async def add_pigment_name(message: types.Message, state: FSMContext):
     await AddPigment.next()
     await message.reply('Введіть опис пігменту')
 
+
 async def add_description(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['description'] = message.text
     await AddPigment.next()
     await message.reply('Введіть обьеми та ціни на пігменти. Формат: (Обьем: Ціна)')
+
 
 async def add_volume_and_price(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
@@ -137,6 +144,40 @@ async def add_volume_and_price(message: types.Message, state: FSMContext):
     session.add(pigment)
     session.commit()
     await state.finish()
+
+
+async def start_add_creator(message: types.Message):
+    if message.from_user.id in managers_id:
+        await AddCreator.photo.set()
+        await message.reply('Завантажте логотип виробника')
+
+
+async def add_photo_creator(messgae: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['photo'] = messgae.photo[0].file_id
+    await AddCreator.next()
+    await messgae.reply('Введіть призначення пігменту("Татту" чи "Перманент")')
+
+
+async def add_creator_direction(message: types.Message, state: FSMContext):
+    if message.text not in direction:
+        await bot.send_message(message.from_user.id, 'Введені не вірні данні.\n'
+                                                     'Введіть: "Тутту" чи "Перманент"')
+    async with state.proxy() as data:
+        data['direction'] = message.text
+    await AddCreator.next()
+    await message.reply('Введіть назву виробника')
+
+
+async def add_creator_name(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['name'] = message.text
+
+    creator = Creator(photo=data['photo'],direction=data['direction'], creator_name=data['name'])
+    session.add(creator)
+    session.commit()
+    await state.finish()
+
 
 async def send_client_keyboard(message: types.Message):
     if int(message.from_user.id) in managers_id:
@@ -163,12 +204,17 @@ def register_handler_admin(dp: Dispatcher):
     # add pigment
     dp.register_message_handler(start_add_pigment, commands=admin_commands['Додати_пігмент'], state=None)
     dp.register_message_handler(add_photo_pigment, content_types=['photo'], state=AddPigment.photo)
-    dp.register_message_handler(add_direction, state=AddPigment.direction)
+    dp.register_message_handler(add_pigment_direction, state=AddPigment.direction)
     dp.register_message_handler(add_zone_or_color, state=AddPigment.zone_or_color)
     dp.register_message_handler(add_company_creator, state=AddPigment.company_creator)
     dp.register_message_handler(add_pigment_name, state=AddPigment.pigment_name)
     dp.register_message_handler(add_description, state=AddPigment.description)
     dp.register_message_handler(add_volume_and_price, state=AddPigment.volume_and_price)
+    # add Creator
+    dp.register_message_handler(start_add_creator, commands=admin_commands['Додати_виробника'], state=None)
+    dp.register_message_handler(add_photo_creator, content_types=['photo'], state=AddCreator.photo)
+    dp.register_message_handler(add_creator_direction, state=AddCreator.direction)
+    dp.register_message_handler(add_creator_name, state=AddCreator.creator_name)
     # send keyboards
     dp.register_message_handler(send_client_keyboard, commands=admin_commands['Клавіатура_клієнт'])
     dp.register_message_handler(send_manager_keyboard, commands=admin_commands['Клавіатура_менеджера'])
