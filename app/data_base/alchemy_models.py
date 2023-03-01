@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, BigInteger,Numeric
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, BigInteger
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker
@@ -51,10 +51,8 @@ class Creator(Base):
 
     photo = Column(String)
     direction = Column(String)
-    creator_name = Column(String,primary_key=True)
+    creator_name = Column(String, primary_key=True)
     pigment = relationship("Pigments", back_populates='creator')
-
-
 
 
 create_session = sessionmaker(bind=engine)

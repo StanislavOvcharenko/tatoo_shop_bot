@@ -1,4 +1,3 @@
-import sqlalchemy.exc
 from aiogram.dispatcher.filters import Text
 
 from app.create_bot import bot
@@ -45,15 +44,19 @@ async def contacts(message: types.Message):
 async def choice_keyboard_client(message: types.Message):
     await bot.send_message(message.from_user.id, 'Виберіть необхідний розділ', reply_markup=choice_tattoo_or_permanent)
 
+
 '''
 ########################################Tattoo########################################
 '''
+
+
 async def tatoo_creators(message: types.Message):
     all_pigments = session.query(Creator).filter_by(direction="Татту").all()
     for item in all_pigments:
         await bot.send_photo(message.from_user.id, item.photo,
                              reply_markup=tatoo_and_permanent_inline_button("Тату-виробник",
                                                                             item.creator_name, item.creator_name))
+
 
 async def tattoo_colors(callback: types.CallbackQuery):
     colors = []
@@ -81,21 +84,25 @@ async def tattoo_pigments(callback: types.CallbackQuery):
                                                                    f'Опис:{pigment.description}\n'
                                                                    f'Ціни та обєм:{pigment.volume_and_price}')
 
+
 '''
 ########################################Permanent########################################
 '''
+
+
 async def permanent_creators(message: types.Message):
     all_pigments = session.query(Creator).filter_by(direction="Перманент").all()
     for item in all_pigments:
         await bot.send_photo(message.from_user.id, item.photo, reply_markup=tatoo_and_permanent_inline_button(
-            "Перманент-выробник",item.creator_name, item.creator_name))
+            "Перманент-выробник", item.creator_name, item.creator_name))
 
 
 async def permanent_zones(callback: types.CallbackQuery):
     zones = []
     callback_data = callback.data.split('_')
     print(f'data1: {callback_data}')
-    all_zones = session.query(Pigments).filter_by(company_creator=callback_data[1]).filter_by(direction="Перманент").all()
+    all_zones = session.query(Pigments).filter_by(company_creator=callback_data[1]).filter_by(
+        direction="Перманент").all()
 
     for zone in all_zones:
         if zone.zone_or_color not in zones:
@@ -118,7 +125,6 @@ async def permanent_pigments(callback: types.CallbackQuery):
         await bot.send_photo(callback.from_user.id, pigment.photo, f'Назва:{pigment.pigment_name}\n'
                                                                    f'Опис:{pigment.description}\n'
                                                                    f'Ціни та обєм:{pigment.volume_and_price}')
-
 
 
 def register_handlers_client(dp: Dispatcher):

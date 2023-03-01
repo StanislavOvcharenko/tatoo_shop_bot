@@ -173,7 +173,7 @@ async def add_creator_name(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['name'] = message.text
 
-    creator = Creator(photo=data['photo'],direction=data['direction'], creator_name=data['name'])
+    creator = Creator(photo=data['photo'], direction=data['direction'], creator_name=data['name'])
     session.add(creator)
     session.commit()
     await state.finish()
