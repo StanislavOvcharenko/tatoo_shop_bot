@@ -9,6 +9,7 @@ from app.create_bot import bot
 from app.handlers.state_machines import AddManagers, MakeMailing, AddPigment, AddCreator
 from app.keyboards.admin_keyboards import manager_keyboard
 from app.keyboards.client_keyboards import start_menu
+from app.keyboards.inline import delete_creator_markup
 from app.data_base import AllManagers, session, AllClients, DataMailing, Pigments, Creator
 
 managers_id = []
@@ -189,6 +190,22 @@ async def send_manager_keyboard(message: types.Message):
         await bot.send_message(message.from_user.id, 'Клавіатура менеджера', reply_markup=manager_keyboard)
 
 
+'''################### Delete Creator ###################'''
+
+
+async def all_creators(message: types.Message):
+    if int(message.from_user.id) in managers_id:
+        await bot.send_message(message.from_user.id, 'Виберіть виробника', reply_markup=delete_creator_markup())
+
+
+async def delete_creator(callback: types.CallbackQuery):
+    callback_data = callback.data.split('_')
+    creator = session.query(Creator).filter_by(creator_name=callback_data[1]).first()
+    session.delete(creator)
+    session.commit()
+    await callback.answer(text="Виробника видалено")
+
+
 def register_handler_admin(dp: Dispatcher):
     # add manager
     dp.register_message_handler(start_add_manager, commands=admin_commands['Додати_працівника'], state=None)
@@ -218,3 +235,6 @@ def register_handler_admin(dp: Dispatcher):
     # send keyboards
     dp.register_message_handler(send_client_keyboard, commands=admin_commands['Клавіатура_клієнт'])
     dp.register_message_handler(send_manager_keyboard, commands=admin_commands['Клавіатура_менеджера'])
+    # delete creator
+    dp.register_message_handler(all_creators, commands=admin_commands['Видалити_виробника'])
+    dp.register_callback_query_handler(delete_creator, Text(startswith='Видалити-виробника_'))
