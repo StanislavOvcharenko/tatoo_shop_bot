@@ -1,10 +1,9 @@
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, BigInteger
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.orm import sessionmaker
 
 engine = create_engine("postgresql+psycopg2://admin:admin@localhost:5433/example_tele_bot", echo=True)
-
 
 Base = declarative_base()
 
@@ -52,7 +51,7 @@ class Creator(Base):
     photo = Column(String)
     direction = Column(String)
     creator_name = Column(String, primary_key=True)
-    pigment = relationship("Pigments", back_populates='creator')
+    pigment = relationship("Pigments", back_populates='creator', cascade='all,delete')
 
 
 create_session = sessionmaker(bind=engine)

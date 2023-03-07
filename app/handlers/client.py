@@ -4,7 +4,7 @@ from app.create_bot import bot
 from app.keyboards.client_keyboards import start_menu
 from app.keyboards.client_keyboards import choice_tattoo_or_permanent
 from app.keyboards.admin_keyboards import choose_keyboard
-from app.keyboards.inline import tatoo_and_permanent_inline_button, color_or_zone_inline_button
+from app.keyboards.inline import tatoo_and_permanent_inline_button, color_or_zone_inline_button, delete_item
 
 from app.handlers.handlers_commands import client_commands
 from app.handlers.admin import managers_id
@@ -68,7 +68,7 @@ async def tattoo_colors(callback: types.CallbackQuery):
             colors.append(color.zone_or_color)
         else:
             continue
-
+    await callback.answer("Завантажую...")
     await bot.send_message(callback.from_user.id, f'{"Виберіть колір:"}',
                            reply_markup=color_or_zone_inline_button('Колір', 'Татту', callback_data[1], colors))
 
@@ -78,11 +78,17 @@ async def tattoo_pigments(callback: types.CallbackQuery):
     all_pigments_query = session.query(Pigments).filter_by(direction=callback_data[1]).filter_by(
         company_creator=callback_data[2],
         zone_or_color=callback_data[3]).all()
-
+    await callback.answer("Завантажую...")
     for pigment in all_pigments_query:
-        await bot.send_photo(callback.from_user.id, pigment.photo, f'Назва:{pigment.pigment_name}\n'
-                                                                   f'Опис:{pigment.description}\n'
-                                                                   f'Ціни та обєм:{pigment.volume_and_price}')
+        if callback.from_user.id in managers_id:
+            await bot.send_photo(callback.from_user.id, pigment.photo, f'Назва:{pigment.pigment_name}\n'
+                                                                       f'Опис:{pigment.description}\n'
+                                                                       f'Ціни та обєм:{pigment.volume_and_price}',
+                                 reply_markup=delete_item(pigment.pigment_name, pigment.id))
+        else:
+            await bot.send_photo(callback.from_user.id, pigment.photo, f'Назва:{pigment.pigment_name}\n'
+                                                                       f'Опис:{pigment.description}\n'
+                                                                       f'Ціни та обєм:{pigment.volume_and_price}')
 
 
 '''
@@ -103,7 +109,7 @@ async def permanent_zones(callback: types.CallbackQuery):
     print(f'data1: {callback_data}')
     all_zones = session.query(Pigments).filter_by(company_creator=callback_data[1]).filter_by(
         direction="Перманент").all()
-
+    await callback.answer("Завантажую...")
     for zone in all_zones:
         if zone.zone_or_color not in zones:
             zones.append(zone.zone_or_color)
@@ -116,15 +122,27 @@ async def permanent_zones(callback: types.CallbackQuery):
 
 async def permanent_pigments(callback: types.CallbackQuery):
     callback_data = callback.data.split('_')
-    print(f'data: {callback_data}')
     all_pigments_permanent_query = session.query(Pigments).filter_by(direction=callback_data[1]).filter_by(
         company_creator=callback_data[2],
         zone_or_color=callback_data[3]).all()
-
+    await callback.answer("Завантажую...")
     for pigment in all_pigments_permanent_query:
-        await bot.send_photo(callback.from_user.id, pigment.photo, f'Назва:{pigment.pigment_name}\n'
-                                                                   f'Опис:{pigment.description}\n'
-                                                                   f'Ціни та обєм:{pigment.volume_and_price}')
+        if callback.from_user.id in managers_id:
+            await bot.send_photo(callback.from_user.id, pigment.photo, f'Назва:{pigment.pigment_name}\n'
+                                                                       f'Опис:{pigment.description}\n'
+                                                                       f'Ціни та обєм:{pigment.volume_and_price}',
+                                 reply_markup=delete_item(pigment.pigment_name, pigment.id))
+        else:
+            await bot.send_photo(callback.from_user.id, pigment.photo, f'Назва:{pigment.pigment_name}\n'
+                                                                       f'Опис:{pigment.description}\n'
+                                                                       f'Ціни та обєм:{pigment.volume_and_price}')
+
+
+async def delete_pigment(callback: types.CallbackQuery):
+    callback_data = callback.data.split('_')
+    session.query(Pigments).filter(Pigments.id == callback_data[1]).delete()
+    session.commit()
+    await callback.answer(text=f'Пігмент видалено')
 
 
 def register_handlers_client(dp: Dispatcher):
@@ -137,3 +155,4 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(permanent_creators, commands=client_commands["Пігменти_для_перманенту"])
     dp.register_callback_query_handler(permanent_zones, Text(startswith="Перманент-выробник"))
     dp.register_callback_query_handler(permanent_pigments, Text(startswith="Зона_"))
+    dp.register_callback_query_handler(delete_pigment, Text(startswith="Видалити-пігмент_"))
