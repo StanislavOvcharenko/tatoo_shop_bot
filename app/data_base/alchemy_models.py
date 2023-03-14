@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, BigInteger
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, BigInteger, ARRAY, Boolean, Date
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.orm import sessionmaker
@@ -52,6 +52,19 @@ class Creator(Base):
     direction = Column(String)
     creator_name = Column(String, primary_key=True)
     pigment = relationship("Pigments", back_populates='creator', cascade='all,delete')
+
+
+class Orders(Base):
+    __tablename__ = 'Orders'
+
+    id = Column(Integer, primary_key=True)
+    client_id = Column(BigInteger)
+    items = Column(ARRAY(Integer))
+    delivery_data = Column(String)
+    how_to_contact = Column(String, default=None)
+    more_info = Column(String, default=None)
+    order_status = Column(Boolean, default=False)
+    create_date = Column(Date)
 
 
 create_session = sessionmaker(bind=engine)

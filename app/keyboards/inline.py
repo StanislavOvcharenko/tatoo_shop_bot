@@ -21,7 +21,9 @@ def delete_item(name, item_id):
     delete_inline_markup = InlineKeyboardMarkup(row_width=1)
     delete_inline_button = InlineKeyboardButton(text=f'Видилити: {name}',
                                                 callback_data=f'Видалити-пігмент_{item_id}')
-    markup = delete_inline_markup.add(delete_inline_button)
+    add_to_basket = InlineKeyboardButton(text=f'Додати до кошика: {name}',
+                                       callback_data=f'Додати-до-кошика_{item_id}')
+    markup = delete_inline_markup.add(delete_inline_button).add(add_to_basket)
     return markup
 
 
@@ -33,3 +35,10 @@ def delete_creator_markup():
                                                     callback_data=f'Видалити-виробника_{creator.creator_name}')
         delete_inline_markup.add(delete_inline_button)
     return delete_inline_markup
+
+
+def add_to_basket_markup(name, pigment_id):
+    add_to_basket_mark = InlineKeyboardMarkup(row_width=1)
+    add_to_basket_button = InlineKeyboardButton(text=f'Додати до кошика: {name}',
+                                                callback_data=f'Додати-до-кошика_{pigment_id}')
+    return add_to_basket_mark.add(add_to_basket_button)

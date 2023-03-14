@@ -25,3 +25,9 @@ class AddCreator(StatesGroup):
     photo = State()
     direction = State()
     creator_name = State()
+
+
+class MakeOrder(StatesGroup):
+    any_information = State()
+    delivery_data = State()
+    how_to_contact = State()

@@ -1,16 +1,19 @@
 from aiogram.dispatcher.filters import Text
+from datetime import date, datetime
 
 from app.create_bot import bot
 from app.keyboards.client_keyboards import start_menu
-from app.keyboards.client_keyboards import choice_tattoo_or_permanent
+from app.keyboards.client_keyboards import choice_tattoo_or_permanent, basket_menu
 from app.keyboards.admin_keyboards import choose_keyboard
-from app.keyboards.inline import tatoo_and_permanent_inline_button, color_or_zone_inline_button, delete_item
+from app.keyboards.inline import tatoo_and_permanent_inline_button, color_or_zone_inline_button, delete_item, \
+    add_to_basket_markup
 
 from app.handlers.handlers_commands import client_commands
-from app.handlers.admin import managers_id
-from app.data_base import AllClients, session, Pigments, Creator
+from app.handlers.admin import managers_id, cancel_admin_handlers
+from app.handlers.state_machines import MakeOrder
+from app.data_base import AllClients, session, Pigments, Creator, Orders
 
-from aiogram.dispatcher import Dispatcher
+from aiogram.dispatcher import Dispatcher, FSMContext
 from aiogram import types
 
 
@@ -84,7 +87,7 @@ async def tattoo_pigments(callback: types.CallbackQuery):
             await bot.send_photo(callback.from_user.id, pigment.photo, f'Назва:{pigment.pigment_name}\n'
                                                                        f'Опис:{pigment.description}\n'
                                                                        f'Ціни та обєм:{pigment.volume_and_price}',
-                                 reply_markup=delete_item(pigment.pigment_name, pigment.id))
+                                 reply_markup=delete_item(pigment.pigment_name, pigment.id), )
         else:
             await bot.send_photo(callback.from_user.id, pigment.photo, f'Назва:{pigment.pigment_name}\n'
                                                                        f'Опис:{pigment.description}\n'
@@ -135,7 +138,8 @@ async def permanent_pigments(callback: types.CallbackQuery):
         else:
             await bot.send_photo(callback.from_user.id, pigment.photo, f'Назва:{pigment.pigment_name}\n'
                                                                        f'Опис:{pigment.description}\n'
-                                                                       f'Ціни та обєм:{pigment.volume_and_price}')
+                                                                       f'Ціни та обєм:{pigment.volume_and_price}',
+                                 reply_markup=add_to_basket_markup(pigment.pigment_name, pigment.id))
 
 
 async def delete_pigment(callback: types.CallbackQuery):
@@ -143,6 +147,87 @@ async def delete_pigment(callback: types.CallbackQuery):
     session.query(Pigments).filter(Pigments.id == callback_data[1]).delete()
     session.commit()
     await callback.answer(text=f'Пігмент видалено')
+
+
+async def add_to_basket(callback: types.CallbackQuery):
+    callback_data = callback.data.split('_')
+    print(callback_data)
+    try:
+        order = session.query(Orders).filter_by(client_id=callback.from_user.id).filter_by(order_status=False).first()
+        items_list = list(order.items)
+        items_list.append(int(callback_data[1]))
+        order.items = items_list
+        session.commit()
+        await callback.answer(text='Підмент додано')
+    except AttributeError:
+        order = Orders(client_id=callback.from_user.id, items=[int(callback_data[1])])
+        session.add(order)
+        session.commit()
+        await callback.answer(text='Підмент додано')
+
+
+async def my_basket(message: types.Message):
+    basket = session.query(Orders).filter_by(client_id=message.from_user.id, order_status=False).first()
+    pigments = session.query(Pigments).all()
+    basket_list = list(basket.items)
+    for item in basket_list:
+        for pigment in pigments:
+            if pigment.id == item:
+                await bot.send_photo(message.from_user.id, pigment.photo, f'Назва: {pigment.pigment_name}\n'
+                                                                          f'Обьем та ціни: {pigment.volume_and_price}',
+                                     reply_markup=basket_menu)
+
+
+'''################################## Send order ##################################'''
+
+
+async def start_make_order(message: types.Message):
+    await MakeOrder.any_information.set()
+    await message.reply('Напишіть кількість та обьеми необхідних пігментів.\n '
+                        'Також ви можете вказати инші товари яки вам необхідні або будь-яку іншу інформацию :) ')
+
+
+async def add_more_info(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['more_info'] = message.text
+    await MakeOrder.next()
+    await message.reply(
+        'Напишыть данні для відправки вашого замовлення (П.І.П., Номер телефону, Місто доставки, Відділеня НП)')
+
+
+async def add_delivery_data(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['delivery_data'] = message.text
+    await MakeOrder.next()
+    await message.reply('Напишіть як з вами зв\'язатись бля уточнення і оформлення замовлення.Номер телефону чи '
+                        'Інстаграм аккаунт або любий інший спосіб')
+
+
+async def add_contact_and_send_order(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        data['how_to_contact'] = message.text
+
+    order = session.query(Orders.items).filter_by(client_id=message.from_user.id, order_status=False).first()
+    pigments = session.query(Pigments).all()
+
+    session.query(Orders).filter_by(client_id=message.from_user.id, order_status=False).update({
+        "delivery_data": data['delivery_data'], "more_info": data['more_info'], "how_to_contact": data['how_to_contact'],
+        "order_status": True, "create_date": date.today()})
+    session.commit()
+
+    items_in_order = []
+    for item in order[0]:
+        for pigment in pigments:
+            if pigment.id == item:
+                items_in_order.append([pigment.pigment_name, pigment.company_creator, pigment.volume_and_price])
+
+    await bot.send_message(managers_id[0], f'Спосіб зв\'язку: {data["how_to_contact"]}\n'
+                                           f'Данні доставки: {data["delivery_data"]}\n'
+                                           f'Інформація про замовлення: {data["more_info"]}\n'
+                                           f'Замовлення: {items_in_order}')
+
+    await bot.send_message(message.from_user.id, 'Замовлення відпраленно менеджеру, з Вами зв\'яжуться в порядку черги')
+    await state.finish()
 
 
 def register_handlers_client(dp: Dispatcher):
@@ -156,3 +241,13 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_callback_query_handler(permanent_zones, Text(startswith="Перманент-выробник"))
     dp.register_callback_query_handler(permanent_pigments, Text(startswith="Зона_"))
     dp.register_callback_query_handler(delete_pigment, Text(startswith="Видалити-пігмент_"))
+    dp.register_callback_query_handler(add_to_basket, Text(startswith="Додати-до-кошика_"))
+    dp.register_message_handler(my_basket, commands=client_commands["Мій_кошик"])
+    # make order
+    dp.register_message_handler(start_make_order, commands=client_commands["Оформити_замолення"], state=None)
+    dp.register_message_handler(cancel_admin_handlers, state="*", commands=client_commands['Відмінити'])
+    dp.register_message_handler(cancel_admin_handlers, Text(equals=client_commands['Відмінити'], ignore_case=True),
+                                state="*")
+    dp.register_message_handler(add_more_info, state=MakeOrder.any_information)
+    dp.register_message_handler(add_delivery_data, state=MakeOrder.delivery_data)
+    dp.register_message_handler(add_contact_and_send_order, state=MakeOrder.how_to_contact)
