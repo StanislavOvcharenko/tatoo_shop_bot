@@ -16,8 +16,12 @@ choice_tattoo_or_permanent = ReplyKeyboardMarkup(resize_keyboard=True)
 
 choice_tattoo_or_permanent.add(tatoo).add(permanent)
 
-home_button = ReplyKeyboardMarkup(resize_keyboard=True)
+''' BASKET MARKUP '''
+basket_menu = ReplyKeyboardMarkup(resize_keyboard=True
+                                  )
+make_order = KeyboardButton(f'/{client_commands["Оформити_замолення"]}')
+home = KeyboardButton(f'/{client_commands["start"][1]}')
+cancel = KeyboardButton(f'/{client_commands["Відмінити"]}')
 
-home = KeyboardButton(f'/{client_commands["На_головну_сторінку"]}')
+basket_menu.add(make_order).add(home).add(cancel)
 
-home_button.add(home)
