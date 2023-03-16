@@ -2,7 +2,6 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from app.data_base import session, Creator
 
 
-
 def tatoo_and_permanent_inline_button(text_command, text, creator):
     tatoo_inline_button = InlineKeyboardButton(text=f'{text}', callback_data=f'{text_command}_{creator}')
     tatoo_inline_markup = InlineKeyboardMarkup(row_width=1)
@@ -19,7 +18,7 @@ def color_or_zone_inline_button(text_command, direction, creator, colors_or_zone
 
 def delete_item(name, item_id):
     delete_inline_markup = InlineKeyboardMarkup(row_width=1)
-    delete_inline_button = InlineKeyboardButton(text=f'Видилити: {name}',
+    delete_inline_button = InlineKeyboardButton(text=f'Видалити: {name}',
                                                 callback_data=f'Видалити-пігмент_{item_id}')
     add_to_basket = InlineKeyboardButton(text=f'Додати до кошика: {name}',
                                        callback_data=f'Додати-до-кошика_{item_id}')
@@ -42,3 +41,17 @@ def add_to_basket_markup(name, pigment_id):
     add_to_basket_button = InlineKeyboardButton(text=f'Додати до кошика: {name}',
                                                 callback_data=f'Додати-до-кошика_{pigment_id}')
     return add_to_basket_mark.add(add_to_basket_button)
+
+
+def choice_tattoo_or_permanent():
+    inline_m = InlineKeyboardMarkup(row_width=1)
+    tattoo_button = InlineKeyboardButton(text='Татту Пігменти 👹', callback_data='Татту-пігменти_')
+    permanent_button = InlineKeyboardButton(text='Пігменти для перманенту 👄', callback_data='Пігменти-для-перманенту')
+    return inline_m.add(tattoo_button).add(permanent_button)
+
+
+def delete_item_from_basket(pigment_id):
+    inline_markup = InlineKeyboardMarkup(row_width=1)
+    inline_button = InlineKeyboardButton(text='Видалити з корзини', callback_data=f'Видалити-з-корзини_{pigment_id}')
+    return inline_markup.add(inline_button)
+
