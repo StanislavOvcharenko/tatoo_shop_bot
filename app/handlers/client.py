@@ -1,12 +1,12 @@
 from aiogram.dispatcher.filters import Text
-from datetime import date, datetime
+from datetime import date
 
 from app.create_bot import bot
 from app.keyboards.client_keyboards import start_menu
-from app.keyboards.client_keyboards import choice_tattoo_or_permanent, basket_menu
+from app.keyboards.client_keyboards import basket_menu
 from app.keyboards.admin_keyboards import choose_keyboard
 from app.keyboards.inline import tatoo_and_permanent_inline_button, color_or_zone_inline_button, delete_item, \
-    add_to_basket_markup
+    add_to_basket_markup, choice_tattoo_or_permanent, delete_item_from_basket
 
 from app.handlers.handlers_commands import client_commands
 from app.handlers.admin import managers_id, cancel_admin_handlers
@@ -45,7 +45,8 @@ async def contacts(message: types.Message):
 
 
 async def choice_keyboard_client(message: types.Message):
-    await bot.send_message(message.from_user.id, 'Виберіть необхідний розділ', reply_markup=choice_tattoo_or_permanent)
+    await bot.send_message(message.from_user.id, 'Виберіть необхідний розділ',
+                           reply_markup=choice_tattoo_or_permanent())
 
 
 '''
@@ -53,12 +54,13 @@ async def choice_keyboard_client(message: types.Message):
 '''
 
 
-async def tatoo_creators(message: types.Message):
+async def tatoo_creators(callback: types.CallbackQuery):
     all_pigments = session.query(Creator).filter_by(direction="Татту").all()
     for item in all_pigments:
-        await bot.send_photo(message.from_user.id, item.photo,
-                             reply_markup=tatoo_and_permanent_inline_button("Тату-виробник",
-                                                                            item.creator_name, item.creator_name))
+        print(item.creator_name)
+        await bot.edit_message_reply_markup(chat_id=callback.message.chat.id, message_id=callback.message.message_id,
+                                            reply_markup=tatoo_and_permanent_inline_button(
+                                                "Тату-виробник", item.creator_name, item.creator_name))
 
 
 async def tattoo_colors(callback: types.CallbackQuery):
@@ -72,7 +74,7 @@ async def tattoo_colors(callback: types.CallbackQuery):
         else:
             continue
     await callback.answer("Завантажую...")
-    await bot.send_message(callback.from_user.id, f'{"Виберіть колір:"}',
+    await bot.edit_message_reply_markup(chat_id=callback.message.chat.id, message_id=callback.message.message_id,
                            reply_markup=color_or_zone_inline_button('Колір', 'Татту', callback_data[1], colors))
 
 
@@ -82,6 +84,7 @@ async def tattoo_pigments(callback: types.CallbackQuery):
         company_creator=callback_data[2],
         zone_or_color=callback_data[3]).all()
     await callback.answer("Завантажую...")
+    await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)
     for pigment in all_pigments_query:
         if callback.from_user.id in managers_id:
             await bot.send_photo(callback.from_user.id, pigment.photo, f'Назва:{pigment.pigment_name}\n'
@@ -99,11 +102,14 @@ async def tattoo_pigments(callback: types.CallbackQuery):
 '''
 
 
-async def permanent_creators(message: types.Message):
+async def permanent_creators(callback: types.CallbackQuery):
     all_pigments = session.query(Creator).filter_by(direction="Перманент").all()
     for item in all_pigments:
-        await bot.send_photo(message.from_user.id, item.photo, reply_markup=tatoo_and_permanent_inline_button(
-            "Перманент-выробник", item.creator_name, item.creator_name))
+        await bot.edit_message_reply_markup(chat_id=callback.message.chat.id, message_id=callback.message.message_id,
+                                            reply_markup=tatoo_and_permanent_inline_button(
+                                                "Перманент-выробник", item.creator_name, item.creator_name))
+        # await bot.send_photo(message.from_user.id, item.photo, reply_markup=tatoo_and_permanent_inline_button(
+        #     "Перманент-выробник", item.creator_name, item.creator_name))
 
 
 async def permanent_zones(callback: types.CallbackQuery):
@@ -119,7 +125,7 @@ async def permanent_zones(callback: types.CallbackQuery):
         else:
             continue
 
-    await bot.send_message(callback.from_user.id, f'{"Виберіть зону:"}',
+    await bot.edit_message_reply_markup(chat_id=callback.message.chat.id, message_id=callback.message.message_id,
                            reply_markup=color_or_zone_inline_button('Зона', 'Перманент', callback_data[1], zones))
 
 
@@ -130,6 +136,7 @@ async def permanent_pigments(callback: types.CallbackQuery):
         zone_or_color=callback_data[3]).all()
     await callback.answer("Завантажую...")
     for pigment in all_pigments_permanent_query:
+        await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)
         if callback.from_user.id in managers_id:
             await bot.send_photo(callback.from_user.id, pigment.photo, f'Назва:{pigment.pigment_name}\n'
                                                                        f'Опис:{pigment.description}\n'
@@ -147,6 +154,9 @@ async def delete_pigment(callback: types.CallbackQuery):
     session.query(Pigments).filter(Pigments.id == callback_data[1]).delete()
     session.commit()
     await callback.answer(text=f'Пігмент видалено')
+
+
+'''################################## Basket ##################################'''
 
 
 async def add_to_basket(callback: types.CallbackQuery):
@@ -170,12 +180,23 @@ async def my_basket(message: types.Message):
     basket = session.query(Orders).filter_by(client_id=message.from_user.id, order_status=False).first()
     pigments = session.query(Pigments).all()
     basket_list = list(basket.items)
+    await bot.send_message(message.from_user.id, 'Ваше замовлення:', reply_markup=basket_menu)
     for item in basket_list:
         for pigment in pigments:
             if pigment.id == item:
                 await bot.send_photo(message.from_user.id, pigment.photo, f'Назва: {pigment.pigment_name}\n'
                                                                           f'Обьем та ціни: {pigment.volume_and_price}',
-                                     reply_markup=basket_menu)
+                                     reply_markup=delete_item_from_basket(pigment.id))
+
+
+async def delete_from_basket(callback: types.CallbackQuery):
+    callback_data = callback.data.split('_')
+    basket = session.query(Orders).filter_by(client_id=callback.from_user.id, order_status=False).first()
+    basket_list = list(basket.items)
+    basket_list.remove(int(callback_data[1]))
+    basket.items = basket_list
+    session.commit()
+    await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)
 
 
 '''################################## Send order ##################################'''
@@ -211,7 +232,8 @@ async def add_contact_and_send_order(message: types.Message, state: FSMContext):
     pigments = session.query(Pigments).all()
 
     session.query(Orders).filter_by(client_id=message.from_user.id, order_status=False).update({
-        "delivery_data": data['delivery_data'], "more_info": data['more_info'], "how_to_contact": data['how_to_contact'],
+        "delivery_data": data['delivery_data'], "more_info": data['more_info'],
+        "how_to_contact": data['how_to_contact'],
         "order_status": True, "create_date": date.today()})
     session.commit()
 
@@ -231,20 +253,21 @@ async def add_contact_and_send_order(message: types.Message, state: FSMContext):
 
 
 def register_handlers_client(dp: Dispatcher):
-    dp.register_message_handler(start, commands=client_commands['start'])
-    dp.register_message_handler(contacts, commands=client_commands['Наші_контакти'])
-    dp.register_message_handler(choice_keyboard_client, commands=client_commands['Палітри_пігментів'])
-    dp.register_message_handler(tatoo_creators, commands=client_commands['Татту_пігменти'])
+    dp.register_message_handler(start, Text(startswith=client_commands['start']))
+    dp.register_message_handler(contacts, Text(startswith=client_commands['Наші_контакти']))
+    dp.register_message_handler(choice_keyboard_client, Text(startswith=client_commands['Палітри_пігментів']))
+    dp.register_callback_query_handler(tatoo_creators, Text(startswith="Татту-пігменти_"))
     dp.register_callback_query_handler(tattoo_colors, Text(startswith="Тату-виробник_"))
     dp.register_callback_query_handler(tattoo_pigments, Text(startswith="Колір_"))
-    dp.register_message_handler(permanent_creators, commands=client_commands["Пігменти_для_перманенту"])
+    dp.register_callback_query_handler(permanent_creators, Text(startswith='Пігменти-для-перманенту'))
     dp.register_callback_query_handler(permanent_zones, Text(startswith="Перманент-выробник"))
     dp.register_callback_query_handler(permanent_pigments, Text(startswith="Зона_"))
     dp.register_callback_query_handler(delete_pigment, Text(startswith="Видалити-пігмент_"))
     dp.register_callback_query_handler(add_to_basket, Text(startswith="Додати-до-кошика_"))
-    dp.register_message_handler(my_basket, commands=client_commands["Мій_кошик"])
+    dp.register_message_handler(my_basket, Text(startswith=client_commands['Мій_кошик']))
+    dp.register_callback_query_handler(delete_from_basket, Text(startswith="Видалити-з-корзини_"))
     # make order
-    dp.register_message_handler(start_make_order, commands=client_commands["Оформити_замолення"], state=None)
+    dp.register_message_handler(start_make_order, Text(startswith=client_commands['Оформити_замолення']), state=None)
     dp.register_message_handler(cancel_admin_handlers, state="*", commands=client_commands['Відмінити'])
     dp.register_message_handler(cancel_admin_handlers, Text(equals=client_commands['Відмінити'], ignore_case=True),
                                 state="*")
