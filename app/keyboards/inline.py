@@ -1,11 +1,15 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from app.data_base import session, Creator
+from app.data_base import session, Creator, Pigments
 
 
-def tatoo_and_permanent_inline_button(text_command, text, creator):
-    tatoo_inline_button = InlineKeyboardButton(text=f'{text}', callback_data=f'{text_command}_{creator}')
+def tatoo_and_permanent_inline_button(text, direction):
+    all_creators = session.query(Creator).filter_by(direction=direction).all()
     tatoo_inline_markup = InlineKeyboardMarkup(row_width=1)
-    return tatoo_inline_markup.add(tatoo_inline_button)
+    for item in all_creators:
+        tatoo_inline_button = InlineKeyboardButton(text=f'{item.creator_name}',
+                                                   callback_data=f'{text}_{item.creator_name}')
+        tatoo_inline_markup.add(tatoo_inline_button)
+    return tatoo_inline_markup
 
 
 def color_or_zone_inline_button(text_command, direction, creator, colors_or_zone):
@@ -45,13 +49,22 @@ def add_to_basket_markup(name, pigment_id):
 
 def choice_tattoo_or_permanent():
     inline_m = InlineKeyboardMarkup(row_width=1)
-    tattoo_button = InlineKeyboardButton(text='Татту Пігменти 👹', callback_data='Татту-пігменти_')
+    tattoo_button = InlineKeyboardButton(text='Тату Пігменти 👹', callback_data='Татту-пігменти_')
     permanent_button = InlineKeyboardButton(text='Пігменти для перманенту 👄', callback_data='Пігменти-для-перманенту')
     return inline_m.add(tattoo_button).add(permanent_button)
 
 
 def delete_item_from_basket(pigment_id):
     inline_markup = InlineKeyboardMarkup(row_width=1)
-    inline_button = InlineKeyboardButton(text='Видалити з корзини', callback_data=f'Видалити-з-корзини_{pigment_id}')
+    inline_button = InlineKeyboardButton(text='Видалити з кошика', callback_data=f'Видалити-з-корзини_{pigment_id}')
     return inline_markup.add(inline_button)
+
+
+def choice_any_creator_or_color_or_zone(direction,text_command, creator):
+    choice_markup = InlineKeyboardMarkup(row_width=1)
+    choice_creators = InlineKeyboardButton(text='Обрати іншого виробника', callback_data=f'{direction}')
+    choice_zone_or_color = InlineKeyboardButton(text=f'Обрати інший колір',
+                                                callback_data=f'{text_command}_{creator}')
+    return choice_markup.add(choice_creators).add(choice_zone_or_color)
+
 

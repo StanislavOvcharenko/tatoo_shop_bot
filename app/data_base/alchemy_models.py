@@ -15,14 +15,6 @@ class AllClients(Base):
     client_telegram_id = Column(BigInteger, unique=True)
 
 
-class AllManagers(Base):
-    __tablename__ = 'AllManagers'
-
-    id = Column(Integer, primary_key=True)
-    last_name = Column(String)
-    manager_telegram_id = Column(BigInteger, unique=True)
-
-
 class DataMailing(Base):
     __tablename__ = 'DataMailing'
 
@@ -48,7 +40,6 @@ class Pigments(Base):
 class Creator(Base):
     __tablename__ = 'Creator'
 
-    photo = Column(String)
     direction = Column(String)
     creator_name = Column(String, primary_key=True)
     pigment = relationship("Pigments", back_populates='creator', cascade='all,delete')
