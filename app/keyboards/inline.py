@@ -1,5 +1,5 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from app.data_base import session, Creator, Pigments
+from app.data_base import session, Creator
 
 
 def tatoo_and_permanent_inline_button(text, direction):
@@ -26,7 +26,8 @@ def delete_item(name, item_id):
                                                 callback_data=f'Видалити-пігмент_{item_id}')
     add_to_basket = InlineKeyboardButton(text=f'Додати до кошика: {name}',
                                        callback_data=f'Додати-до-кошика_{item_id}')
-    markup = delete_inline_markup.add(delete_inline_button).add(add_to_basket)
+    update_button = InlineKeyboardButton(text='Змінити цину та об\'єм', callback_data=f'Зміна-ціни_{item_id}')
+    markup = delete_inline_markup.add(delete_inline_button).add(add_to_basket).add(update_button)
     return markup
 
 
@@ -49,7 +50,7 @@ def add_to_basket_markup(name, pigment_id):
 
 def choice_tattoo_or_permanent():
     inline_m = InlineKeyboardMarkup(row_width=1)
-    tattoo_button = InlineKeyboardButton(text='Тату Пігменти 👹', callback_data='Татту-пігменти_')
+    tattoo_button = InlineKeyboardButton(text='Тату Пігменти 👹', callback_data='Тату-пігменти_')
     permanent_button = InlineKeyboardButton(text='Пігменти для перманенту 👄', callback_data='Пігменти-для-перманенту')
     return inline_m.add(tattoo_button).add(permanent_button)
 
@@ -60,11 +61,12 @@ def delete_item_from_basket(pigment_id):
     return inline_markup.add(inline_button)
 
 
-def choice_any_creator_or_color_or_zone(direction,text_command, creator):
+def choice_any_creator_or_color_or_zone(direction, text_command, creator):
     choice_markup = InlineKeyboardMarkup(row_width=1)
     choice_creators = InlineKeyboardButton(text='Обрати іншого виробника', callback_data=f'{direction}')
     choice_zone_or_color = InlineKeyboardButton(text=f'Обрати інший колір',
                                                 callback_data=f'{text_command}_{creator}')
     return choice_markup.add(choice_creators).add(choice_zone_or_color)
+
 
 

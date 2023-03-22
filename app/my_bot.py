@@ -2,7 +2,6 @@ from aiogram.utils import executor
 from app.create_bot import dp
 from handlers import client, other, admin
 from data_base import Base, engine
-from app.handlers.admin import managers_id
 
 
 async def on_startup(_):

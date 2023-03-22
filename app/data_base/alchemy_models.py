@@ -1,9 +1,16 @@
+import os
+from dotenv import load_dotenv, find_dotenv
+
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, BigInteger, ARRAY, Boolean, Date
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.orm import sessionmaker
 
-engine = create_engine("postgresql+psycopg2://admin:admin@localhost:5433/example_tele_bot", echo=True)
+load_dotenv(find_dotenv())
+
+engine = create_engine(f'postgresql+psycopg2://{os.getenv("POSTGRES_USER")}:'
+                       f'{os.getenv("POSTGRES_PASSWORD")}@{os.getenv("POSTGRES_HOST")}'
+                       f':{os.getenv("POSTGRES_PORT")}/{os.getenv("POSTGRES_DB_NAME")}', echo=True)
 
 Base = declarative_base()
 

@@ -20,7 +20,7 @@ def cancel_markup_admin():
 
 
 choose_manager_keyboard = KeyboardButton(f'/{admin_commands["Клавіатура_менеджера"]}')
-choose_client_keyboard = KeyboardButton(f'/{admin_commands["Клавіатура_клієнт"]}')
+choose_client_keyboard = KeyboardButton(f'/{admin_commands["Клавіатура_клієнта"]}')
 
 
 choose_keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
