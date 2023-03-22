@@ -25,3 +25,8 @@ class MakeOrder(StatesGroup):
     any_information = State()
     delivery_data = State()
     how_to_contact = State()
+
+
+class UpdatePriceAndVolume(StatesGroup):
+    new_price_and_volume = State()
+

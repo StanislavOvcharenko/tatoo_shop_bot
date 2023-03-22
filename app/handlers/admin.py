@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.handlers.handlers_commands import admin_commands
 from app.create_bot import bot
-from app.handlers.state_machines import MakeMailing, AddPigment, AddCreator
+from app.handlers.state_machines import MakeMailing, AddPigment, AddCreator, UpdatePriceAndVolume
 from app.keyboards.admin_keyboards import manager_keyboard, cancel_markup_admin
 from app.keyboards.client_keyboards import start_menu
 from app.keyboards.inline import delete_creator_markup
@@ -15,7 +15,7 @@ from app.data_base import session, AllClients, DataMailing, Pigments, Creator
 managers_id_str = os.getenv('MANAGERS_ID')
 managers_id = ast.literal_eval(managers_id_str)
 
-direction_pigment = ['Татту', 'Перманент']
+direction_pigment = ['Тату', 'Перманент']
 
 
 async def start_make_mailing(message: types.Message):
@@ -28,8 +28,8 @@ async def start_make_mailing(message: types.Message):
 async def cancel_admin_handlers(message: types.Message, state: FSMContext):
     if int(message.from_user.id) in managers_id:
         current_state = await state.get_state()
-    if current_state is None:
-        return
+        if current_state is None:
+            return
     await state.finish()
     await message.reply('OK', reply_markup=manager_keyboard)
 
@@ -65,17 +65,17 @@ async def add_photo_pigment(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['photo'] = message.photo[0].file_id
     await AddPigment.next()
-    await message.reply('Введіть: "Татту" чи "Перманент"')
+    await message.reply('Введіть: "Тату" чи "Перманент"')
 
 
 async def add_pigment_direction(message: types.Message, state: FSMContext):
     if message.text not in direction_pigment:
-        await bot.send_message(message.from_user.id, 'Введені не вірні данні\nВведіть: "Татту" чи "Перманент"')
+        await bot.send_message(message.from_user.id, 'Введені не вірні данні\nВведіть: "Тату" чи "Перманент"')
     else:
         async with state.proxy() as data:
             data['direction'] = message.text
         await AddPigment.next()
-        await message.reply('Введіть зону для перманенту  чи колір для татту')
+        await message.reply('Введіть зону для перманенту  чи колір для тату')
 
 
 async def add_zone_or_color(message: types.Message, state: FSMContext):
@@ -126,18 +126,19 @@ async def add_company_creator(message: types.Message, state: FSMContext):
 async def start_add_creator(message: types.Message):
     if message.from_user.id in managers_id:
         await AddCreator.direction.set()
-        await message.reply('Введіть призначення пігменту("Татту" чи "Перманент")', reply_markup=cancel_markup_admin())
+        await message.reply('Введіть призначення пігменту("Тату" чи "Перманент")', reply_markup=cancel_markup_admin())
 
 
 async def add_creator_direction(message: types.Message, state: FSMContext):
     if message.text not in direction_pigment:
         await bot.send_message(message.from_user.id, 'Введені не вірні данні.\n'
-                                                     'Введіть: "Татту" чи "Перманент"')
+                                                     'Введіть: "Тату" чи "Перманент"')
     else:
         async with state.proxy() as data:
             data['direction'] = message.text
         await AddCreator.next()
-        await message.reply('Введіть назву виробника')
+        await message.reply('Введіть назву виробника\n'
+                            'Назву Англійською!!!!!!')
 
 
 async def add_creator_name(message: types.Message, state: FSMContext):
@@ -180,6 +181,28 @@ async def delete_creator(callback: types.CallbackQuery):
     await callback.answer(text="Виробника видалено")
 
 
+async def start_update_price_and_volume_pigment(callback: types.CallbackQuery, state: FSMContext):
+    if callback.from_user.id in managers_id:
+        callback_data = callback.data.split('_')
+        async with state.proxy() as data:
+            data['pigment_id'] = callback_data[1]
+        await UpdatePriceAndVolume.new_price_and_volume.set()
+        await bot.send_message(callback.from_user.id, 'Введіть нову ціну та об\'єм', reply_markup=cancel_markup_admin())
+
+
+async def set_new_price_and_volume(message: types.Message, state: FSMContext):
+    try:
+        async with state.proxy() as data:
+            pigment = session.query(Pigments).filter_by(id=data['pigment_id']).first()
+            pigment.volume_and_price = message.text
+            session.commit()
+        await message.reply(text='Зміни зроблені', reply_markup=start_menu)
+    except AttributeError:
+        await bot.send_message(message.from_user.id, 'Такого пігменту вже не існує', reply_markup=start_menu)
+    finally:
+        await state.finish()
+
+
 def register_handler_admin(dp: Dispatcher):
     # make a mailing
     dp.register_message_handler(start_make_mailing, Text(startswith=admin_commands['Зробити_розсилку']), state=None)
@@ -204,8 +227,11 @@ def register_handler_admin(dp: Dispatcher):
     dp.register_message_handler(add_creator_direction, state=AddCreator.direction)
     dp.register_message_handler(add_creator_name, state=AddCreator.creator_name)
     # send keyboards
-    dp.register_message_handler(send_client_keyboard, commands=admin_commands['Клавіатура_клієнт'])
+    dp.register_message_handler(send_client_keyboard, commands=admin_commands['Клавіатура_клієнта'])
     dp.register_message_handler(send_manager_keyboard, commands=admin_commands['Клавіатура_менеджера'])
     # delete creator
     dp.register_message_handler(all_creators, Text(startswith=admin_commands['Видалити_виробника']))
     dp.register_callback_query_handler(delete_creator, Text(startswith='Видалити-виробника_'))
+    dp.register_callback_query_handler(start_update_price_and_volume_pigment, Text(
+        startswith='Зміна-ціни_'), state=None)
+    dp.register_message_handler(set_new_price_and_volume, state=UpdatePriceAndVolume.new_price_and_volume)
