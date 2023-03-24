@@ -1,4 +1,5 @@
-import os, ast
+import os
+import ast
 from aiogram import types
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher import FSMContext, Dispatcher
@@ -16,6 +17,8 @@ managers_id_str = os.getenv('MANAGERS_ID')
 managers_id = ast.literal_eval(managers_id_str)
 
 direction_pigment = ['Тату', 'Перманент']
+
+'''####################################### MAKE MAILING #######################################'''
 
 
 async def start_make_mailing(message: types.Message):
@@ -53,6 +56,8 @@ async def send_mailing(message: types.Message, state: FSMContext):
         session.commit()
         await bot.send_message(message.from_user.id, "Повідомлення було відправленно", reply_markup=start_menu)
         await state.finish()
+
+'''############################# ADD PIGMENT TO DB #############################'''
 
 
 async def start_add_pigment(message: types.message):
@@ -122,6 +127,8 @@ async def add_company_creator(message: types.Message, state: FSMContext):
         await bot.send_message(message.from_user.id, "Не вірна назва виробника.\n"
                                                      "Введіть вірну назву знов")
 
+'''############################# ADD CREATOR COMPANY TO BD #############################'''
+
 
 async def start_add_creator(message: types.Message):
     if message.from_user.id in managers_id:
@@ -154,7 +161,7 @@ async def add_creator_name(message: types.Message, state: FSMContext):
         session.rollback()
         await bot.send_message(message.from_user.id, 'Назва виробника зайнята. Введіть іншу назву')
 
-
+'''############################# SEND ADMIN KEYBORADS #############################'''
 async def send_client_keyboard(message: types.Message):
     if int(message.from_user.id) in managers_id:
         await bot.send_message(message.from_user.id, 'Клавіатура кліента', reply_markup=start_menu)
@@ -180,7 +187,7 @@ async def delete_creator(callback: types.CallbackQuery):
     session.commit()
     await callback.answer(text="Виробника видалено")
 
-
+'''############################# UPDATE VOLUME AND PRICE #############################'''
 async def start_update_price_and_volume_pigment(callback: types.CallbackQuery, state: FSMContext):
     if callback.from_user.id in managers_id:
         callback_data = callback.data.split('_')

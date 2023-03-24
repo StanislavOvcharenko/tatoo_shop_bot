@@ -21,4 +21,3 @@ make_order = KeyboardButton(f'{client_commands["Оформити_замолен�
 home = KeyboardButton(f'{client_commands["start"][1]}')
 
 basket_menu.add(make_order).add(home)
-

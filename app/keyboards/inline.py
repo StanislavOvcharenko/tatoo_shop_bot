@@ -64,9 +64,6 @@ def delete_item_from_basket(pigment_id):
 def choice_any_creator_or_color_or_zone(direction, text_command, creator):
     choice_markup = InlineKeyboardMarkup(row_width=1)
     choice_creators = InlineKeyboardButton(text='Обрати іншого виробника', callback_data=f'{direction}')
-    choice_zone_or_color = InlineKeyboardButton(text=f'Обрати інший колір',
+    choice_zone_or_color = InlineKeyboardButton(text='Обрати інший колір',
                                                 callback_data=f'{text_command}_{creator}')
     return choice_markup.add(choice_creators).add(choice_zone_or_color)
-
-
-
