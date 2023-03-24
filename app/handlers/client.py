@@ -64,8 +64,8 @@ async def cancel_client_handlers(message: types.Message, state: FSMContext):
 
 async def tatoo_creators(callback: types.CallbackQuery):
     await bot.edit_message_reply_markup(chat_id=callback.message.chat.id, message_id=callback.message.message_id,
-                                            reply_markup=tatoo_and_permanent_inline_button(
-                                                "Тату-виробник", "Тату"))
+                                        reply_markup=tatoo_and_permanent_inline_button(
+                                            "Тату-виробник", "Тату"))
 
 
 async def tattoo_colors(callback: types.CallbackQuery):
@@ -79,7 +79,8 @@ async def tattoo_colors(callback: types.CallbackQuery):
             continue
     await callback.answer("Завантажую...")
     await bot.edit_message_reply_markup(chat_id=callback.message.chat.id, message_id=callback.message.message_id,
-                           reply_markup=color_or_zone_inline_button('Колір', 'Тату', callback_data[1], colors))
+                                        reply_markup=color_or_zone_inline_button('Колір', 'Тату', callback_data[1],
+                                                                                 colors))
 
 
 async def tattoo_pigments(callback: types.CallbackQuery):
@@ -102,8 +103,10 @@ async def tattoo_pigments(callback: types.CallbackQuery):
                                  reply_markup=add_to_basket_markup(pigment.pigment_name, pigment.id))
     await bot.send_message(callback.from_user.id, 'Зробити інший вибір',
                            reply_markup=choice_any_creator_or_color_or_zone('Тату-пігменти_',
-                                                                            "Тату-виробник_",
+                                                                            "Тату-виробник",
                                                                             callback_data[2]))
+
+
 '''
 ########################################Permanent########################################
 '''
@@ -128,7 +131,8 @@ async def permanent_zones(callback: types.CallbackQuery):
             continue
 
     await bot.edit_message_reply_markup(chat_id=callback.message.chat.id, message_id=callback.message.message_id,
-                           reply_markup=color_or_zone_inline_button('Зона', 'Перманент', callback_data[1], zones))
+                                        reply_markup=color_or_zone_inline_button('Зона', 'Перманент', callback_data[1],
+                                                                                 zones))
 
 
 async def permanent_pigments(callback: types.CallbackQuery):
@@ -160,7 +164,7 @@ async def delete_pigment(callback: types.CallbackQuery):
     callback_data = callback.data.split('_')
     session.query(Pigments).filter(Pigments.id == callback_data[1]).delete()
     session.commit()
-    await callback.answer(text=f'Пігмент видалено')
+    await callback.answer(text='Пігмент видалено')
 
 
 '''################################## Basket ##################################'''
@@ -202,6 +206,7 @@ async def my_basket(message: types.Message):
         await bot.send_message(message.from_user.id, "Ваш кошик пустий🥺\n"
                                                      "За покупками🚀", reply_markup=choice_tattoo_or_permanent())
 
+
 async def delete_from_basket(callback: types.CallbackQuery):
     callback_data = callback.data.split('_')
     basket = session.query(Orders).filter_by(client_id=callback.from_user.id, order_status=False).first()
@@ -217,8 +222,8 @@ async def delete_from_basket(callback: types.CallbackQuery):
 
 async def start_make_order(message: types.Message):
     await MakeOrder.any_information.set()
-    await message.reply('Напишіть кількість та обьеми необхідних пігментів.\n '
-                        'Також ви можете вказати инші товари яки вам необхідні або будь-яку іншу інформацию :) ',
+    await message.reply('Напишіть кількість та об\'єми необхідних пігментів.\n'
+                        'Також ви можете вказати інші необхідні товари та додаткову інформацію. ❤️ ',
                         reply_markup=cancel_markup_client())
 
 
@@ -227,15 +232,15 @@ async def add_more_info(message: types.Message, state: FSMContext):
         data['more_info'] = message.text
     await MakeOrder.next()
     await message.reply(
-        'Напишыть данні для відправки вашого замовлення (П.І.П., Номер телефону, Місто доставки, Відділеня НП)')
+        'Вкажіть дані для відправки замовлення: ПІП, номер телефону, населений пункт і відділення НП. 📦')
 
 
 async def add_delivery_data(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['delivery_data'] = message.text
     await MakeOrder.next()
-    await message.reply('Напишіть як з вами зв\'язатись бля уточнення і оформлення замовлення.Номер телефону чи '
-                        'Інстаграм аккаунт або любий інший спосіб')
+    await message.reply('Напишіть зручний для Вас спосіб уточнення замовлення '
+                        '(номер телефону, інстаграм-акаунт, чи інше).')
 
 
 async def add_contact_and_send_order(message: types.Message, state: FSMContext):
@@ -262,7 +267,7 @@ async def add_contact_and_send_order(message: types.Message, state: FSMContext):
                                            f'Інформація про замовлення: {data["more_info"]}\n'
                                            f'Замовлення: {items_in_order}')
 
-    await bot.send_message(message.from_user.id, 'Замовлення відпраленно менеджеру, з Вами зв\'яжуться в порядку черги',
+    await bot.send_message(message.from_user.id, 'Замовлення відпраленно менеджеру, зв\'яжемося якомога швидше',
                            reply_markup=start_menu)
     await state.finish()
 

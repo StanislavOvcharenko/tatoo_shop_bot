@@ -29,4 +29,3 @@ class MakeOrder(StatesGroup):
 
 class UpdatePriceAndVolume(StatesGroup):
     new_price_and_volume = State()
-
