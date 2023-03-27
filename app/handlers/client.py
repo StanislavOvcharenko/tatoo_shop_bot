@@ -1,6 +1,8 @@
 from aiogram.dispatcher.filters import Text
 from datetime import date
 
+from sqlalchemy.exc import IntegrityError
+
 from app.create_bot import bot
 from app.keyboards.client_keyboards import start_menu, cancel_markup_client
 from app.keyboards.client_keyboards import basket_menu
@@ -26,20 +28,20 @@ async def start(message: types.Message):
         client = AllClients(client_telegram_id=message.from_user.id)
         session.add(client)
         session.commit()
-    except:
+    except IntegrityError:
         session.rollback()
 
 
 async def contacts(message: types.Message):
-    await bot.send_message(message.from_user.id, 'Інтернет магазин: ipiccadilly.com\n'
+    await bot.send_message(message.from_user.id, 'Інтернет магазин: MyBot.com\n'
                                                  'Контактні телефони:\n'
-                                                 '+38(096) 648-69-85\n'
-                                                 '+38(063) 531-10-93\n'
-                                                 '+38(095) 220-11-14\n'
+                                                 '+38(096) 000000000\n'
+                                                 '+38(063) 000000000\n'
+                                                 '+38(095) 000000000\n'
                                                  'Час роботи: Пн-Вс з 9:00 до 20:00'
                            )
-    await bot.send_message(message.from_user.id, 'м.Дніпро, Проспект Дмитра Яворницького 52, ТЦ ЦУМ, 1 поверх\n'
-                                                 'Телефон магазину в ТЦ ЦУМ: +38(063) 258-69-03\n'
+    await bot.send_message(message.from_user.id, 'м.Дніпро, Проспект Дмитра Яворницького 52, ТЦ ЦУМ\n'
+                                                 'Телефон магазину в ТЦ ЦУМ: +38(063) 00000000\n'
                                                  'Час роботи: Пн-Вс з 9:00 до 20:00')
     await bot.send_location(message.from_user.id, '48.465292845969934', '35.04569818039999')
 
